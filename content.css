@@ -1,0 +1,91 @@
+#kimi-selection-toolbar {
+  all: initial;
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 999px;
+  background: rgba(24, 24, 24, 0.96);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(8px);
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+.kimi-toolbar-btn {
+  all: initial;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  color: #fff;
+  background: #303030;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+.kimi-toolbar-btn:hover {
+  transform: translateY(-1px);
+  background: #474747;
+}
+
+.kimi-toolbar-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+#kimi-result-card {
+  all: initial;
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  display: none;
+  width: min(420px, calc(100vw - 24px));
+  max-height: 320px;
+  overflow: auto;
+  color: #f6f6f6;
+  background: rgba(17, 17, 17, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+.kimi-result-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(22, 22, 22, 0.98);
+}
+
+.kimi-result-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.kimi-result-close {
+  all: initial;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #f6f6f6;
+  background: #2f2f2f;
+  padding: 4px 8px;
+}
+
+.kimi-result-content {
+  margin: 0;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kimi Extension Options</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: Segoe UI, sans-serif;
+        background: #f4f6f9;
+      }
+      .card {
+        max-width: 620px;
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 22px;
+      }
+      p {
+        margin: 0 0 14px;
+        color: #444;
+        line-height: 1.5;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccd3dc;
+      }
+      button {
+        margin-top: 14px;
+        border: none;
+        border-radius: 8px;
+        background: #0f62fe;
+        color: #fff;
+        font-weight: 600;
+        padding: 10px 14px;
+        cursor: pointer;
+      }
+      .btn-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .diag-row {
+        margin-top: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .diag-row input {
+        width: auto;
+      }
+      #testBtn {
+        background: #1f7a3f;
+      }
+      #status {
+        margin-top: 10px;
+        min-height: 20px;
+        color: #0a7f28;
+        font-size: 14px;
+        white-space: pre-line;
+      }
+      .hint {
+        margin-top: 14px;
+        font-size: 13px;
+        color: #555;
+      }
+      code {
+        background: #eef1f6;
+        border-radius: 6px;
+        padding: 1px 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Kimi API Settings</h1>
+      <p>
+        Paste your Kimi API key. It is stored via <code>chrome.storage.sync</code> and used by the extension background worker.
+      </p>
+
+      <label for="apiKey">Kimi API Key</label>
+      <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" />
+      <div class="btn-row">
+        <button id="saveBtn" type="button">Save</button>
+        <button id="testBtn" type="button">Test Connection</button>
+      </div>
+      <label class="diag-row" for="diagnosticMode">
+        <input id="diagnosticMode" type="checkbox" />
+        Enable diagnostic mode (show endpoint, status, and truncated server error)
+      </label>
+      <div id="status"></div>
+
+      <p class="hint">
+        API endpoint used: <code>https://api.moonshot.cn/v1/chat/completions</code>
+      </p>
+      <p class="hint">
+        Key tips: only paste the raw key, do not include <code>Bearer </code>, quotes, or extra spaces.
+      </p>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>
