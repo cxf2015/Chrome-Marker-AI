@@ -1,5 +1,7 @@
 # Chrome Plug-in to Quick Translate To Markdown for Chrome
 
+English | [中文](README.zh-CN.md)
+
 ![Version](https://img.shields.io/badge/version-1.0.0-0A7F28)
 ![Manifest](https://img.shields.io/badge/Manifest-MV3-1F6FEB)
 ![Platform](https://img.shields.io/badge/Browser-Chrome-DB4437)
@@ -28,7 +30,7 @@ Built for reading, research, and quick note-taking directly in browser.
 
 1. Open Chrome and go to chrome://extensions/
 2. Enable Developer mode
-3. Click Load unpacked and select the chorme_plug_in folder
+3. Click Load unpacked and select the chorme_marker_AI folder
 
 ## First-Time Setup
 
