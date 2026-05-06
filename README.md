@@ -6,7 +6,9 @@
 ![AI](https://img.shields.io/badge/AI-Kimi%20Moonshot-111111)
 
 Fast AI helper for any webpage: select text, click once, get instant streaming output.
+
 ![alt text](attachment/image.png)
+
 This extension provides three quick actions on selected text and page content:
 
 - AI Explain: explain selected text in simple Chinese
@@ -74,3 +76,7 @@ chrome extension, kimi, moonshot, ai explain, translate to chinese, markdown gen
 ## Chinese Search Keywords
 
 Chrome 插件, Kimi 插件, 网页翻译, 网页解释, 网页转 Markdown, 划词工具, 浏览器 AI 助手, 流式输出, Moonshot API, MV3 扩展
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
