@@ -1,4 +1,4 @@
-# Kimi Quick Explain Translate To Markdown for Chrome
+# Chrome Plug-in to Quick Translate To Markdown for Chrome
 
 ![Version](https://img.shields.io/badge/version-1.0.0-0A7F28)
 ![Manifest](https://img.shields.io/badge/Manifest-MV3-1F6FEB)
@@ -6,7 +6,7 @@
 ![AI](https://img.shields.io/badge/AI-Kimi%20Moonshot-111111)
 
 Fast AI helper for any webpage: select text, click once, get instant streaming output.
-
+![alt text](attachment/image.png)
 This extension provides three quick actions on selected text and page content:
 
 - AI Explain: explain selected text in simple Chinese
