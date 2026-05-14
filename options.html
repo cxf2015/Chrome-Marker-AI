@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kimi Extension Options</title>
+    <title>AI Extension Options</title>
     <style>
       body {
         margin: 0;
@@ -32,7 +32,8 @@
         margin-bottom: 8px;
         font-weight: 600;
       }
-      input {
+      input,
+      select {
         width: 100%;
         box-sizing: border-box;
         padding: 10px;
@@ -87,13 +88,22 @@
   </head>
   <body>
     <main class="card">
-      <h1>Kimi API Settings</h1>
+      <h1>AI Provider Settings</h1>
       <p>
-        Paste your Kimi API key. It is stored via <code>chrome.storage.sync</code> and used by the extension background worker.
+        Configure provider and API keys. Settings are stored via <code>chrome.storage.sync</code> and used by the extension background worker.
       </p>
 
-      <label for="apiKey">Kimi API Key</label>
+      <label for="provider">Provider</label>
+      <select id="provider">
+        <option value="moonshot">Moonshot (Kimi)</option>
+        <option value="deepseek">DeepSeek</option>
+      </select>
+
+      <label for="apiKey">Moonshot / Kimi API Key</label>
       <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" />
+
+      <label for="deepseekApiKey" style="margin-top: 12px">DeepSeek API Key</label>
+      <input id="deepseekApiKey" type="password" placeholder="sk-..." autocomplete="off" />
       <div class="btn-row">
         <button id="saveBtn" type="button">Save</button>
         <button id="testBtn" type="button">Test Connection</button>
@@ -105,7 +115,10 @@
       <div id="status"></div>
 
       <p class="hint">
-        API endpoint used: <code>https://api.moonshot.cn/v1/chat/completions</code>
+        Moonshot endpoint: <code>https://api.moonshot.cn/v1/chat/completions</code>
+      </p>
+      <p class="hint">
+        DeepSeek endpoint: <code>https://api.deepseek.com/chat/completions</code>
       </p>
       <p class="hint">
         Key tips: only paste the raw key, do not include <code>Bearer </code>, quotes, or extra spaces.

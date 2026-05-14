@@ -5,7 +5,7 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-0A7F28)
 ![Manifest](https://img.shields.io/badge/Manifest-MV3-1F6FEB)
 ![Platform](https://img.shields.io/badge/Browser-Chrome-DB4437)
-![AI](https://img.shields.io/badge/AI-Kimi%20Moonshot-111111)
+![AI](https://img.shields.io/badge/AI-Moonshot%20%7C%20DeepSeek-111111)
 
 面向任意网页的轻量 AI 助手：选中文字，点击一次，即可获得流式输出结果。
 
@@ -36,7 +36,7 @@
 
 1. 打开扩展详情页
 2. 进入扩展选项（Options）
-3. 粘贴你的 Kimi API Key 并点击 Save
+3. 选择服务商（Moonshot/Kimi 或 DeepSeek），粘贴对应 API Key 并点击 Save
 4. 可选：点击 Test 验证认证是否成功
 
 ## 使用方法
@@ -49,7 +49,7 @@
 ## 功能亮点
 
 - 面向选中文本的悬浮操作工具条
-- 基于 Kimi API 的流式生成
+- 基于 Moonshot/Kimi 或 DeepSeek API 的流式生成
 - 模型自动探测与回退优先级
 - 请求失败时在结果卡片中给出错误反馈
 - 通过扩展选项持久化保存 API Key
@@ -57,18 +57,20 @@
 ## 项目结构
 
 - [manifest.json](manifest.json)：Chrome 扩展清单（MV3）
-- [background.js](background.js)：Kimi API 调用、模型解析、流式处理管线
+- [background.js](background.js)：服务商路由、API 调用、模型解析、流式处理管线
 - [content.js](content.js)：工具条交互、动作分发、结果渲染
 - [content.css](content.css)：工具条与结果卡片样式
 - [options.html](options.html)：配置页面
-- [options.js](options.js)：API Key 保存与测试逻辑
+- [options.js](options.js)：服务商与 API Key 的保存、测试逻辑
 
 ## API 与权限
 
-- API endpoint: https://api.moonshot.cn/v1/chat/completions
-- Model list endpoint: https://api.moonshot.cn/v1/models
+- Moonshot endpoint: https://api.moonshot.cn/v1/chat/completions
+- Moonshot model list endpoint: https://api.moonshot.cn/v1/models
+- DeepSeek endpoint: https://api.deepseek.com/chat/completions
+- DeepSeek model list endpoint: https://api.deepseek.com/models
 - Permissions: storage
-- Host permissions: https://api.moonshot.cn/*
+- Host permissions: https://api.moonshot.cn/*, https://api.deepseek.com/*
 - Content script match: all urls
 
 ## GitHub 检索关键词

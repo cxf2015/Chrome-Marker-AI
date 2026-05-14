@@ -249,7 +249,7 @@ async function handleAction(mode) {
 
   setLoading(true, mode);
   const title = resolveModeTitle(mode);
-  showResultCard(title, "Waiting for Kimi response...");
+  showResultCard(title, "Waiting for AI response...");
 
   try {
     let streamed = "";
@@ -258,18 +258,18 @@ async function handleAction(mode) {
       text,
       onChunk: (chunk) => {
         streamed += chunk;
-        showResultCard(title, streamed || "Waiting for Kimi response...");
+        showResultCard(title, streamed || "Waiting for AI response...");
       }
     });
 
     if (!streamed.trim()) {
-      throw new Error("Kimi API returned an empty message.");
+      throw new Error("AI API returned an empty message.");
     }
   } catch (error) {
     const message = error?.message || "Request failed";
     const lower = message.toLowerCase();
     const needsSetupTip = lower.includes("key is missing") || lower.includes("format is invalid");
-    const tip = needsSetupTip ? "\n\nOpen extension options and set Kimi API key first." : "";
+    const tip = needsSetupTip ? "\n\nOpen extension options and set the selected provider API key first." : "";
     showResultCard("Error", `${message}${tip}`);
   } finally {
     setLoading(false, mode);

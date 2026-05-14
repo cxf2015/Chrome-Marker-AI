@@ -2,9 +2,9 @@
   "manifest_version": 3,
   "name": "Kimi Quick Explain & Translate",
   "version": "1.0.0",
-  "description": "Select text on any page and quickly ask Kimi AI to explain or translate it to Chinese.",
+  "description": "Select text on any page and quickly ask AI (Moonshot/Kimi or DeepSeek) to explain, translate, or summarize.",
   "permissions": ["storage"],
-  "host_permissions": ["https://api.moonshot.cn/*"],
+  "host_permissions": ["https://api.moonshot.cn/*", "https://api.deepseek.com/*"],
   "background": {
     "service_worker": "background.js",
     "type": "module"

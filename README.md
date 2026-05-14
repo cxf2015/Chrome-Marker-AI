@@ -5,7 +5,7 @@ English | [中文](README.zh-CN.md)
 ![Version](https://img.shields.io/badge/version-1.0.0-0A7F28)
 ![Manifest](https://img.shields.io/badge/Manifest-MV3-1F6FEB)
 ![Platform](https://img.shields.io/badge/Browser-Chrome-DB4437)
-![AI](https://img.shields.io/badge/AI-Kimi%20Moonshot-111111)
+![AI](https://img.shields.io/badge/AI-Moonshot%20%7C%20DeepSeek-111111)
 
 Fast AI helper for any webpage: select text, click once, get instant streaming output.
 
@@ -36,7 +36,7 @@ Built for reading, research, and quick note-taking directly in browser.
 
 1. Open extension Details
 2. Open Extension options
-3. Paste your Kimi API Key and click Save
+3. Choose provider (Moonshot/Kimi or DeepSeek), paste corresponding API key, and click Save
 4. Optional: click Test to verify authentication
 
 ## How To Use
@@ -49,7 +49,7 @@ Built for reading, research, and quick note-taking directly in browser.
 ## Feature Highlights
 
 - Floating action toolbar for selected text
-- Streaming generation from Kimi API
+- Streaming generation from Moonshot/Kimi or DeepSeek API
 - Model auto-detection with fallback priority
 - Error feedback in result card when request fails
 - API key storage via extension options
@@ -57,18 +57,20 @@ Built for reading, research, and quick note-taking directly in browser.
 ## Project Structure
 
 - [manifest.json](manifest.json): Chrome extension manifest (MV3)
-- [background.js](background.js): Kimi API calls, model resolution, streaming pipeline
+- [background.js](background.js): provider routing, API calls, model resolution, streaming pipeline
 - [content.js](content.js): toolbar interactions, action dispatch, result rendering
 - [content.css](content.css): toolbar and result card styles
 - [options.html](options.html): options UI
-- [options.js](options.js): API key save and test logic
+- [options.js](options.js): provider and API key save/test logic
 
 ## API and Permissions
 
-- API endpoint: https://api.moonshot.cn/v1/chat/completions
-- Model list endpoint: https://api.moonshot.cn/v1/models
+- Moonshot endpoint: https://api.moonshot.cn/v1/chat/completions
+- Moonshot model list endpoint: https://api.moonshot.cn/v1/models
+- DeepSeek endpoint: https://api.deepseek.com/chat/completions
+- DeepSeek model list endpoint: https://api.deepseek.com/models
 - Permissions: storage
-- Host permissions: https://api.moonshot.cn/*
+- Host permissions: https://api.moonshot.cn/*, https://api.deepseek.com/*
 - Content script match: all urls
 
 ## Search Keywords for GitHub

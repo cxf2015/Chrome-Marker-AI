@@ -1,14 +1,34 @@
-const KIMI_API_URL = "https://api.moonshot.cn/v1/chat/completions";
-const KIMI_MODELS_URL = "https://api.moonshot.cn/v1/models";
-const KIMI_MODEL = "moonshot-v1-8k";
-const MODEL_FALLBACK_PRIORITY = [
-  "moonshot-v1-8k",
-  "moonshot-v1-32k",
-  "moonshot-v1-128k",
-  "kimi-k2-0711-preview",
-  "kimi-k2-turbo-preview",
-  "kimi-latest"
-];
+const PROVIDER_CONFIG = {
+  moonshot: {
+    id: "moonshot",
+    displayName: "Kimi",
+    apiUrl: "https://api.moonshot.cn/v1/chat/completions",
+    modelsUrl: "https://api.moonshot.cn/v1/models",
+    defaultModel: "moonshot-v1-8k",
+    fallbackPriority: [
+      "moonshot-v1-8k",
+      "moonshot-v1-32k",
+      "moonshot-v1-128k",
+      "kimi-k2-0711-preview",
+      "kimi-k2-turbo-preview",
+      "kimi-latest"
+    ],
+    keyStorageKeys: ["kimiApiKey", "apiKey", "moonshotApiKey"],
+    modelStorageKey: "kimiModel"
+  },
+  deepseek: {
+    id: "deepseek",
+    displayName: "DeepSeek",
+    apiUrl: "https://api.deepseek.com/chat/completions",
+    modelsUrl: "https://api.deepseek.com/models",
+    defaultModel: "deepseek-chat",
+    fallbackPriority: ["deepseek-v4-flash"],
+    keyStorageKeys: ["deepseekApiKey"],
+    modelStorageKey: "deepseekModel"
+  }
+};
+
+const DEFAULT_PROVIDER = "moonshot";
 const REQUEST_TIMEOUT_MS = 30000;
 
 function truncateText(input, maxLength = 180) {
@@ -19,12 +39,26 @@ function truncateText(input, maxLength = 180) {
   return `${text.slice(0, maxLength)}...`;
 }
 
-function createDiagnostics(enabled) {
+function normalizeProvider(rawProvider) {
+  const value = String(rawProvider || "").trim().toLowerCase();
+  if (value === "deepseek") {
+    return "deepseek";
+  }
+  return "moonshot";
+}
+
+function getProviderConfig(provider) {
+  const providerId = normalizeProvider(provider);
+  return PROVIDER_CONFIG[providerId] || PROVIDER_CONFIG[DEFAULT_PROVIDER];
+}
+
+function createDiagnostics(enabled, provider) {
   if (!enabled) {
     return null;
   }
 
   return {
+    selectedProvider: getProviderConfig(provider).displayName,
     selectedModel: "",
     steps: []
   };
@@ -118,21 +152,33 @@ async function getStorageValue(area, keys) {
   }
 }
 
-async function readApiKey() {
+async function readProvider(providerOverride = "") {
+  const override = normalizeProvider(providerOverride);
+  if (providerOverride) {
+    return override;
+  }
+
   const [syncData, localData] = await Promise.all([
-    getStorageValue("sync", ["kimiApiKey", "apiKey", "moonshotApiKey"]),
-    getStorageValue("local", ["kimiApiKey", "apiKey", "moonshotApiKey"])
+    getStorageValue("sync", ["aiProvider", "provider"]),
+    getStorageValue("local", ["aiProvider", "provider"])
   ]);
 
-  const candidates = [
-    syncData.kimiApiKey,
-    localData.kimiApiKey,
-    syncData.apiKey,
-    localData.apiKey,
-    syncData.moonshotApiKey,
-    localData.moonshotApiKey
-  ];
+  return normalizeProvider(syncData.aiProvider || localData.aiProvider || syncData.provider || localData.provider || DEFAULT_PROVIDER);
+}
 
+async function readApiKey(provider, apiKeyOverride = "") {
+  const manual = normalizeApiKey(apiKeyOverride);
+  if (manual) {
+    return manual;
+  }
+
+  const config = getProviderConfig(provider);
+  const [syncData, localData] = await Promise.all([
+    getStorageValue("sync", config.keyStorageKeys),
+    getStorageValue("local", config.keyStorageKeys)
+  ]);
+
+  const candidates = config.keyStorageKeys.flatMap((keyName) => [syncData[keyName], localData[keyName]]);
   for (const item of candidates) {
     const key = normalizeApiKey(item || "");
     if (key) {
@@ -153,16 +199,17 @@ async function parseErrorMessage(response) {
   }
 }
 
-function pickBestModel(availableModels) {
+function pickBestModel(availableModels, provider) {
+  const config = getProviderConfig(provider);
   const ids = availableModels
     .map((item) => String(item?.id || "").trim())
     .filter(Boolean);
 
   if (ids.length === 0) {
-    return KIMI_MODEL;
+    return config.defaultModel;
   }
 
-  for (const preferred of MODEL_FALLBACK_PRIORITY) {
+  for (const preferred of config.fallbackPriority) {
     if (ids.includes(preferred)) {
       return preferred;
     }
@@ -171,8 +218,9 @@ function pickBestModel(availableModels) {
   return ids[0];
 }
 
-async function fetchAvailableModels(apiKey, diagnostics) {
-  const response = await fetch(KIMI_MODELS_URL, {
+async function fetchAvailableModels(apiKey, provider, diagnostics) {
+  const config = getProviderConfig(provider);
+  const response = await fetch(config.modelsUrl, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${apiKey}`
@@ -180,14 +228,14 @@ async function fetchAvailableModels(apiKey, diagnostics) {
   });
 
   addDiagnosticStep(diagnostics, {
-    endpoint: KIMI_MODELS_URL,
+    endpoint: config.modelsUrl,
     status: response.status
   });
 
   if (!response.ok) {
     const errorText = await parseErrorMessage(response);
     addDiagnosticStep(diagnostics, {
-      endpoint: KIMI_MODELS_URL,
+      endpoint: config.modelsUrl,
       status: response.status,
       error: errorText
     });
@@ -198,21 +246,23 @@ async function fetchAvailableModels(apiKey, diagnostics) {
   return Array.isArray(data?.data) ? data.data : [];
 }
 
-async function resolveModel(apiKey, forceRefresh = false, diagnostics = null) {
+async function resolveModel(apiKey, provider, forceRefresh = false, diagnostics = null) {
+  const config = getProviderConfig(provider);
   if (!forceRefresh) {
-    const { kimiModel } = await chrome.storage.local.get(["kimiModel"]);
-    if (typeof kimiModel === "string" && kimiModel.trim()) {
+    const cached = await chrome.storage.local.get([config.modelStorageKey]);
+    const value = cached[config.modelStorageKey];
+    if (typeof value === "string" && value.trim()) {
       if (diagnostics) {
-        diagnostics.selectedModel = kimiModel.trim();
+        diagnostics.selectedModel = value.trim();
       }
-      return kimiModel.trim();
+      return value.trim();
     }
   }
 
   try {
-    const availableModels = await fetchAvailableModels(apiKey, diagnostics);
-    const bestModel = pickBestModel(availableModels);
-    await chrome.storage.local.set({ kimiModel: bestModel });
+    const availableModels = await fetchAvailableModels(apiKey, provider, diagnostics);
+    const bestModel = pickBestModel(availableModels, provider);
+    await chrome.storage.local.set({ [config.modelStorageKey]: bestModel });
     if (diagnostics) {
       diagnostics.selectedModel = bestModel;
     }
@@ -220,18 +270,19 @@ async function resolveModel(apiKey, forceRefresh = false, diagnostics = null) {
   } catch {
     // Do not block request flow if listing models is unavailable for this key/account.
     if (diagnostics) {
-      diagnostics.selectedModel = KIMI_MODEL;
+      diagnostics.selectedModel = config.defaultModel;
     }
-    return KIMI_MODEL;
+    return config.defaultModel;
   }
 }
 
-async function postChatCompletion(apiKey, payload) {
+async function postChatCompletion(apiKey, payload, provider) {
+  const config = getProviderConfig(provider);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    return await fetch(KIMI_API_URL, {
+    return await fetch(config.apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -296,22 +347,27 @@ function tryParseSseEventBlock(block, onChunk) {
   return { done: false, text: chunkText };
 }
 
-async function executeChatCompletion(apiKey, mode, text, model, diagnostics = null) {
-  const response = await postChatCompletion(apiKey, {
-    model,
-    temperature: mode === "translate" ? 0.2 : 0.5,
-    messages: buildMessages(mode, text)
-  });
+async function executeChatCompletion(apiKey, mode, text, model, provider, diagnostics = null) {
+  const config = getProviderConfig(provider);
+  const response = await postChatCompletion(
+    apiKey,
+    {
+      model,
+      temperature: mode === "translate" ? 0.2 : 0.5,
+      messages: buildMessages(mode, text)
+    },
+    provider
+  );
 
   addDiagnosticStep(diagnostics, {
-    endpoint: KIMI_API_URL,
+    endpoint: config.apiUrl,
     status: response.status
   });
 
   if (!response.ok) {
     const errorText = await parseErrorMessage(response);
     addDiagnosticStep(diagnostics, {
-      endpoint: KIMI_API_URL,
+      endpoint: config.apiUrl,
       status: response.status,
       error: errorText
     });
@@ -325,7 +381,7 @@ async function executeChatCompletion(apiKey, mode, text, model, diagnostics = nu
   const data = await response.json();
   const message = data?.choices?.[0]?.message?.content;
   if (!message) {
-    throw new Error("Kimi API returned an empty message.");
+    throw new Error(`${config.displayName} API returned an empty message.`);
   }
 
   return {
@@ -334,12 +390,13 @@ async function executeChatCompletion(apiKey, mode, text, model, diagnostics = nu
   };
 }
 
-async function executeChatCompletionStream(apiKey, mode, text, model, onChunk, diagnostics = null) {
+async function executeChatCompletionStream(apiKey, mode, text, model, provider, onChunk, diagnostics = null) {
+  const config = getProviderConfig(provider);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch(KIMI_API_URL, {
+    const response = await fetch(config.apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -355,14 +412,14 @@ async function executeChatCompletionStream(apiKey, mode, text, model, onChunk, d
     });
 
     addDiagnosticStep(diagnostics, {
-      endpoint: KIMI_API_URL,
+      endpoint: config.apiUrl,
       status: response.status
     });
 
     if (!response.ok) {
       const errorText = await parseErrorMessage(response);
       addDiagnosticStep(diagnostics, {
-        endpoint: KIMI_API_URL,
+        endpoint: config.apiUrl,
         status: response.status,
         error: errorText
       });
@@ -374,7 +431,7 @@ async function executeChatCompletionStream(apiKey, mode, text, model, onChunk, d
     }
 
     if (!response.body) {
-      throw new Error("Kimi API returned empty stream body.");
+      throw new Error(`${config.displayName} API returned empty stream body.`);
     }
 
     const reader = response.body.getReader();
@@ -413,7 +470,7 @@ async function executeChatCompletionStream(apiKey, mode, text, model, onChunk, d
 
     const output = fullText.trim();
     if (!output) {
-      throw new Error("Kimi API returned an empty message.");
+      throw new Error(`${config.displayName} API returned an empty message.`);
     }
 
     return {
@@ -425,25 +482,37 @@ async function executeChatCompletionStream(apiKey, mode, text, model, onChunk, d
   }
 }
 
-async function callKimi({ mode, text, apiKeyOverride = "", withDiagnostics = false }) {
-  const diagnostics = createDiagnostics(withDiagnostics);
-  const apiKey = normalizeApiKey(apiKeyOverride) || (await readApiKey());
+function isModelErrorResponse(result) {
+  if (!result || result.ok || result.status !== 400) {
+    return false;
+  }
+
+  const lower = String(result.errorText || "").toLowerCase();
+  return lower.includes("model") && (lower.includes("not exist") || lower.includes("not found") || lower.includes("invalid"));
+}
+
+async function callAI({ mode, text, apiKeyOverride = "", providerOverride = "", withDiagnostics = false }) {
+  const provider = await readProvider(providerOverride);
+  const config = getProviderConfig(provider);
+  const diagnostics = createDiagnostics(withDiagnostics, provider);
+  const apiKey = await readApiKey(provider, apiKeyOverride);
+
   if (!apiKey) {
-    throwWithDiagnostics("Kimi API key is missing. Please set it in extension options.", diagnostics);
+    throwWithDiagnostics(`${config.displayName} API key is missing. Please set it in extension options.`, diagnostics);
   }
 
   if (!isLikelyValidApiKey(apiKey)) {
-    throwWithDiagnostics("Kimi API key format looks invalid. Please paste the raw key from Moonshot/Kimi open platform.", diagnostics);
+    throwWithDiagnostics(`${config.displayName} API key format looks invalid. Please paste the raw key from ${config.displayName} open platform.`, diagnostics);
   }
 
-  let model = await resolveModel(apiKey, false, diagnostics);
+  let model = await resolveModel(apiKey, provider, false, diagnostics);
   let result;
 
   try {
-    result = await executeChatCompletion(apiKey, mode, text, model, diagnostics);
+    result = await executeChatCompletion(apiKey, mode, text, model, provider, diagnostics);
   } catch (error) {
     if (error?.name === "AbortError") {
-      throwWithDiagnostics("Kimi API request timed out. Please check your network or try again later.", diagnostics);
+      throwWithDiagnostics(`${config.displayName} API request timed out. Please check your network or try again later.`, diagnostics);
     }
     if (diagnostics) {
       error.diagnostics = diagnostics;
@@ -451,35 +520,29 @@ async function callKimi({ mode, text, apiKeyOverride = "", withDiagnostics = fal
     throw error;
   }
 
-  if (!result.ok && result.status === 400) {
-    const lower = String(result.errorText || "").toLowerCase();
-    const modelError = lower.includes("model") && (lower.includes("not exist") || lower.includes("not found") || lower.includes("invalid"));
-
-    if (modelError) {
-      model = await resolveModel(apiKey, true, diagnostics);
-      try {
-        result = await executeChatCompletion(apiKey, mode, text, model, diagnostics);
-      } catch (error) {
-        if (error?.name === "AbortError") {
-          throwWithDiagnostics("Kimi API request timed out. Please check your network or try again later.", diagnostics);
-        }
-        if (diagnostics) {
-          error.diagnostics = diagnostics;
-        }
-        throw error;
+  if (isModelErrorResponse(result)) {
+    model = await resolveModel(apiKey, provider, true, diagnostics);
+    try {
+      result = await executeChatCompletion(apiKey, mode, text, model, provider, diagnostics);
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        throwWithDiagnostics(`${config.displayName} API request timed out. Please check your network or try again later.`, diagnostics);
       }
+      if (diagnostics) {
+        error.diagnostics = diagnostics;
+      }
+      throw error;
     }
   }
 
   if (!result.ok) {
     if (result.status === 401) {
       throwWithDiagnostics(
-        "Kimi API key authentication failed (401). Please confirm this key belongs to Moonshot Open Platform and is active, then save it again in extension options."
-        ,
+        `${config.displayName} API key authentication failed (401). Please confirm this key is active, then save it again in extension options.`,
         diagnostics
       );
     }
-    throwWithDiagnostics(`Kimi API failed: ${result.status} ${result.errorText}`, diagnostics);
+    throwWithDiagnostics(`${config.displayName} API failed: ${result.status} ${result.errorText}`, diagnostics);
   }
 
   if (diagnostics) {
@@ -493,25 +556,28 @@ async function callKimi({ mode, text, apiKeyOverride = "", withDiagnostics = fal
   return result.message;
 }
 
-async function callKimiStream({ mode, text, apiKeyOverride = "", onChunk, withDiagnostics = false }) {
-  const diagnostics = createDiagnostics(withDiagnostics);
-  const apiKey = normalizeApiKey(apiKeyOverride) || (await readApiKey());
+async function callAIStream({ mode, text, apiKeyOverride = "", providerOverride = "", onChunk, withDiagnostics = false }) {
+  const provider = await readProvider(providerOverride);
+  const config = getProviderConfig(provider);
+  const diagnostics = createDiagnostics(withDiagnostics, provider);
+  const apiKey = await readApiKey(provider, apiKeyOverride);
+
   if (!apiKey) {
-    throwWithDiagnostics("Kimi API key is missing. Please set it in extension options.", diagnostics);
+    throwWithDiagnostics(`${config.displayName} API key is missing. Please set it in extension options.`, diagnostics);
   }
 
   if (!isLikelyValidApiKey(apiKey)) {
-    throwWithDiagnostics("Kimi API key format looks invalid. Please paste the raw key from Moonshot/Kimi open platform.", diagnostics);
+    throwWithDiagnostics(`${config.displayName} API key format looks invalid. Please paste the raw key from ${config.displayName} open platform.`, diagnostics);
   }
 
-  let model = await resolveModel(apiKey, false, diagnostics);
+  let model = await resolveModel(apiKey, provider, false, diagnostics);
   let result;
 
   try {
-    result = await executeChatCompletionStream(apiKey, mode, text, model, onChunk, diagnostics);
+    result = await executeChatCompletionStream(apiKey, mode, text, model, provider, onChunk, diagnostics);
   } catch (error) {
     if (error?.name === "AbortError") {
-      throwWithDiagnostics("Kimi API request timed out. Please check your network or try again later.", diagnostics);
+      throwWithDiagnostics(`${config.displayName} API request timed out. Please check your network or try again later.`, diagnostics);
     }
     if (diagnostics) {
       error.diagnostics = diagnostics;
@@ -519,35 +585,29 @@ async function callKimiStream({ mode, text, apiKeyOverride = "", onChunk, withDi
     throw error;
   }
 
-  if (!result.ok && result.status === 400) {
-    const lower = String(result.errorText || "").toLowerCase();
-    const modelError = lower.includes("model") && (lower.includes("not exist") || lower.includes("not found") || lower.includes("invalid"));
-
-    if (modelError) {
-      model = await resolveModel(apiKey, true, diagnostics);
-      try {
-        result = await executeChatCompletionStream(apiKey, mode, text, model, onChunk, diagnostics);
-      } catch (error) {
-        if (error?.name === "AbortError") {
-          throwWithDiagnostics("Kimi API request timed out. Please check your network or try again later.", diagnostics);
-        }
-        if (diagnostics) {
-          error.diagnostics = diagnostics;
-        }
-        throw error;
+  if (isModelErrorResponse(result)) {
+    model = await resolveModel(apiKey, provider, true, diagnostics);
+    try {
+      result = await executeChatCompletionStream(apiKey, mode, text, model, provider, onChunk, diagnostics);
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        throwWithDiagnostics(`${config.displayName} API request timed out. Please check your network or try again later.`, diagnostics);
       }
+      if (diagnostics) {
+        error.diagnostics = diagnostics;
+      }
+      throw error;
     }
   }
 
   if (!result.ok) {
     if (result.status === 401) {
       throwWithDiagnostics(
-        "Kimi API key authentication failed (401). Please confirm this key belongs to Moonshot Open Platform and is active, then save it again in extension options."
-        ,
+        `${config.displayName} API key authentication failed (401). Please confirm this key is active, then save it again in extension options.`,
         diagnostics
       );
     }
-    throwWithDiagnostics(`Kimi API failed: ${result.status} ${result.errorText}`, diagnostics);
+    throwWithDiagnostics(`${config.displayName} API failed: ${result.status} ${result.errorText}`, diagnostics);
   }
 
   if (diagnostics) {
@@ -561,8 +621,8 @@ async function callKimiStream({ mode, text, apiKeyOverride = "", onChunk, withDi
   return result.message;
 }
 
-async function testKimiAuth() {
-  const result = await callKimi({ mode: "explain", text: "hello" });
+async function testAIAuth(providerOverride = "") {
+  const result = await callAI({ mode: "explain", text: "hello", providerOverride });
   return { ok: true, preview: result.slice(0, 80) };
 }
 
@@ -579,9 +639,10 @@ chrome.runtime.onConnect.addListener((port) => {
     (async () => {
       try {
         port.postMessage({ type: "started" });
-        const result = await callKimiStream({
+        const result = await callAIStream({
           mode: message.mode,
           text: message.text,
+          providerOverride: message.provider || "",
           onChunk: (chunk) => {
             port.postMessage({ type: "chunk", chunk });
           }
@@ -602,7 +663,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "kimi-request") {
-    callKimi({ mode: message.mode, text: message.text })
+    callAI({ mode: message.mode, text: message.text, providerOverride: message.provider || "" })
       .then((result) => {
         sendResponse({ ok: true, result });
       })
@@ -616,7 +677,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "kimi-test-auth") {
     const diagnose = Boolean(message.diagnose);
 
-    callKimi({ mode: "explain", text: "hello", apiKeyOverride: message.apiKey || "", withDiagnostics: diagnose })
+    callAI({
+      mode: "explain",
+      text: "hello",
+      apiKeyOverride: message.apiKey || "",
+      providerOverride: message.provider || "",
+      withDiagnostics: diagnose
+    })
       .then((result) => {
         if (!diagnose) {
           sendResponse({ ok: true, preview: result.slice(0, 80) });
@@ -641,7 +708,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message?.type === "kimi-test-auth-legacy") {
-    testKimiAuth()
+    testAIAuth(message?.provider || "")
       .then((result) => {
         sendResponse(result);
       })

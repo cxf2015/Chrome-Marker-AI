@@ -1,8 +1,14 @@
+const providerInput = document.getElementById("provider");
 const apiKeyInput = document.getElementById("apiKey");
+const deepseekApiKeyInput = document.getElementById("deepseekApiKey");
 const saveBtn = document.getElementById("saveBtn");
 const testBtn = document.getElementById("testBtn");
 const diagnosticModeInput = document.getElementById("diagnosticMode");
 const statusEl = document.getElementById("status");
+
+function normalizeProvider(provider) {
+  return String(provider || "").trim().toLowerCase() === "deepseek" ? "deepseek" : "moonshot";
+}
 
 function normalizeApiKey(rawKey) {
   if (!rawKey) {
@@ -28,6 +34,9 @@ function formatDiagnostics(diagnostics) {
   }
 
   const lines = [];
+  if (diagnostics.selectedProvider) {
+    lines.push(`Provider: ${diagnostics.selectedProvider}`);
+  }
   if (diagnostics.selectedModel) {
     lines.push(`Model: ${diagnostics.selectedModel}`);
   }
@@ -62,11 +71,13 @@ async function setStorageValue(area, value) {
 
 async function load() {
   const [syncData, localData] = await Promise.all([
-    getStorageValue("sync", ["kimiApiKey", "apiKey", "moonshotApiKey", "kimiDiagnosticMode"]),
-    getStorageValue("local", ["kimiApiKey", "apiKey", "moonshotApiKey", "kimiDiagnosticMode"])
+    getStorageValue("sync", ["aiProvider", "provider", "kimiApiKey", "apiKey", "moonshotApiKey", "deepseekApiKey", "kimiDiagnosticMode"]),
+    getStorageValue("local", ["aiProvider", "provider", "kimiApiKey", "apiKey", "moonshotApiKey", "deepseekApiKey", "kimiDiagnosticMode"])
   ]);
 
-  apiKeyInput.value =
+  providerInput.value = normalizeProvider(syncData.aiProvider || localData.aiProvider || syncData.provider || localData.provider || "moonshot");
+
+  const moonshotApiKey =
     syncData.kimiApiKey ||
     localData.kimiApiKey ||
     syncData.apiKey ||
@@ -75,18 +86,37 @@ async function load() {
     localData.moonshotApiKey ||
     "";
 
+  apiKeyInput.value = moonshotApiKey;
+  deepseekApiKeyInput.value = syncData.deepseekApiKey || localData.deepseekApiKey || "";
+
   diagnosticModeInput.checked = Boolean(syncData.kimiDiagnosticMode ?? localData.kimiDiagnosticMode ?? false);
 }
 
 async function save() {
-  const key = normalizeApiKey(apiKeyInput.value);
+  const provider = normalizeProvider(providerInput.value);
+  const moonshotKey = normalizeApiKey(apiKeyInput.value);
+  const deepseekKey = normalizeApiKey(deepseekApiKeyInput.value);
   const diagnosticMode = Boolean(diagnosticModeInput.checked);
   const [syncOk, localOk] = await Promise.all([
-    setStorageValue("sync", { kimiApiKey: key, kimiDiagnosticMode: diagnosticMode }),
-    setStorageValue("local", { kimiApiKey: key, kimiDiagnosticMode: diagnosticMode })
+    setStorageValue("sync", {
+      aiProvider: provider,
+      provider,
+      kimiApiKey: moonshotKey,
+      deepseekApiKey: deepseekKey,
+      kimiDiagnosticMode: diagnosticMode
+    }),
+    setStorageValue("local", {
+      aiProvider: provider,
+      provider,
+      kimiApiKey: moonshotKey,
+      deepseekApiKey: deepseekKey,
+      kimiDiagnosticMode: diagnosticMode
+    })
   ]);
 
-  apiKeyInput.value = key;
+  providerInput.value = provider;
+  apiKeyInput.value = moonshotKey;
+  deepseekApiKeyInput.value = deepseekKey;
   if (!syncOk && !localOk) {
     setStatus("Save failed: unable to write storage in this context.", true);
     return false;
@@ -106,17 +136,20 @@ async function save() {
 }
 
 async function testConnection() {
-  const key = normalizeApiKey(apiKeyInput.value);
+  const provider = normalizeProvider(providerInput.value);
+  const moonshotKey = normalizeApiKey(apiKeyInput.value);
+  const deepseekKey = normalizeApiKey(deepseekApiKeyInput.value);
+  const key = provider === "deepseek" ? deepseekKey : moonshotKey;
   const diagnose = Boolean(diagnosticModeInput.checked);
   if (!key) {
-    setStatus("Test failed: please paste API key first.", true);
+    setStatus(`Test failed: please paste ${provider === "deepseek" ? "DeepSeek" : "Moonshot/Kimi"} API key first.`, true);
     return;
   }
 
   setStatus("Testing...", false);
   try {
     await save();
-    const response = await chrome.runtime.sendMessage({ type: "kimi-test-auth", apiKey: key, diagnose });
+    const response = await chrome.runtime.sendMessage({ type: "kimi-test-auth", apiKey: key, provider, diagnose });
     if (!response?.ok) {
       const error = new Error(response?.error || "Unknown error");
       error.diagnostics = response?.diagnostics || null;
