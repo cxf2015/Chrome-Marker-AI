@@ -106,12 +106,44 @@ function getSelectionRect() {
 }
 
 function placeElementNearRect(el, rect, offsetY = 10) {
+  const margin = 8;
   const top = rect.top - offsetY;
   const left = rect.left + rect.width / 2;
 
-  el.style.top = `${Math.max(8, top)}px`;
-  el.style.left = `${Math.max(8, Math.min(window.innerWidth - 8, left))}px`;
+  el.style.top = `${Math.max(margin, top)}px`;
+  el.style.left = `${Math.max(margin, Math.min(window.innerWidth - margin, left))}px`;
   el.style.transform = "translate(-50%, -100%)";
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function placeResultCardNearRect(rect) {
+  const margin = 12;
+
+  // Render first so we can read the card's real size for precise clamping.
+  resultCard.style.display = "block";
+  resultCard.style.transform = "none";
+  resultCard.style.maxHeight = `${Math.max(220, window.innerHeight - margin * 2)}px`;
+
+  const cardWidth = resultCard.offsetWidth;
+  const cardHeight = resultCard.offsetHeight;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const centerX = rect.left + rect.width / 2;
+
+  let left = centerX - cardWidth / 2;
+  left = clamp(left, margin, Math.max(margin, viewportWidth - cardWidth - margin));
+
+  const preferTop = rect.bottom + 16;
+  const belowFits = preferTop + cardHeight <= viewportHeight - margin;
+  let top = belowFits ? preferTop : rect.top - cardHeight - 16;
+
+  top = clamp(top, margin, Math.max(margin, viewportHeight - cardHeight - margin));
+
+  resultCard.style.left = `${left}px`;
+  resultCard.style.top = `${top}px`;
 }
 
 function showToolbar(rect) {
@@ -131,9 +163,7 @@ function showResultCard(title, text) {
 
   resultTitle.textContent = title;
   resultContent.textContent = text;
-  placeElementNearRect(resultCard, lastSelectionRect, -16);
-  resultCard.style.transform = "translate(-50%, 0)";
-  resultCard.style.display = "block";
+  placeResultCardNearRect(lastSelectionRect);
 }
 
 function hideResultCard() {

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Kimi Quick Explain & Translate",
+  "name": "Quick Explain & Translate",
   "version": "1.0.0",
   "description": "Select text on any page and quickly ask AI (Moonshot/Kimi or DeepSeek) to explain, translate, or summarize.",
   "permissions": ["storage"],

@@ -43,7 +43,7 @@
   z-index: 2147483647 !important;
   display: none;
   width: min(420px, calc(100vw - 24px));
-  max-height: 320px;
+  max-height: calc(100vh - 24px);
   overflow: auto;
   color: #f6f6f6;
   background: rgba(17, 17, 17, 0.98);
@@ -88,4 +88,5 @@
   font-size: 13px;
   line-height: 1.55;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
