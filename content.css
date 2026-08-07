@@ -7,8 +7,8 @@
   gap: 8px;
   padding: 8px;
   border-radius: 999px;
-  background: rgba(24, 24, 24, 0.96);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  background: rgba(58, 69, 86, 0.94);
+  box-shadow: 0 10px 28px rgba(42, 52, 68, 0.22);
   backdrop-filter: blur(8px);
   font-family: "Segoe UI", Tahoma, sans-serif;
 }
@@ -22,14 +22,14 @@
   cursor: pointer;
   font-size: 12px;
   line-height: 1;
-  color: #fff;
-  background: #303030;
+  color: #f4f6f8;
+  background: #4a5a70;
   transition: transform 120ms ease, background 120ms ease;
 }
 
 .kimi-toolbar-btn:hover {
   transform: translateY(-1px);
-  background: #474747;
+  background: #5b6d86;
 }
 
 .kimi-toolbar-btn:disabled {
@@ -45,11 +45,11 @@
   width: min(420px, calc(100vw - 24px));
   max-height: calc(100vh - 24px);
   overflow: auto;
-  color: #f6f6f6;
-  background: rgba(17, 17, 17, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #2a3038;
+  background: #f3f5f7;
+  border: 1px solid rgba(58, 69, 86, 0.14);
   border-radius: 12px;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 18px 42px rgba(42, 52, 68, 0.18);
   font-family: "Segoe UI", Tahoma, sans-serif;
 }
 
@@ -61,14 +61,15 @@
   justify-content: space-between;
   gap: 8px;
   padding: 10px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(22, 22, 22, 0.98);
+  border-bottom: 1px solid rgba(58, 69, 86, 0.1);
+  background: #e8ecf0;
 }
 
 .kimi-result-title {
   margin: 0;
   font-size: 12px;
   font-weight: 600;
+  color: #3a4556;
 }
 
 .kimi-result-close {
@@ -77,16 +78,21 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  color: #f6f6f6;
-  background: #2f2f2f;
+  color: #3a4556;
+  background: #dce2e8;
   padding: 4px 8px;
+}
+
+.kimi-result-close:hover {
+  background: #cfd6de;
 }
 
 .kimi-result-content {
   margin: 0;
   padding: 12px;
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.65;
+  color: #2a3038;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
