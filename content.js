@@ -5,6 +5,7 @@ let toolbar;
 let resultCard;
 let explainBtn;
 let translateBtn;
+let translateEnBtn;
 let toMdBtn;
 let resultTitle;
 let resultContent;
@@ -25,16 +26,22 @@ function createToolbar() {
   translateBtn.type = "button";
   translateBtn.textContent = "To Chinese";
 
+  translateEnBtn = document.createElement("button");
+  translateEnBtn.className = "kimi-toolbar-btn";
+  translateEnBtn.type = "button";
+  translateEnBtn.textContent = "To English";
+
   toMdBtn = document.createElement("button");
   toMdBtn.className = "kimi-toolbar-btn";
   toMdBtn.type = "button";
   toMdBtn.textContent = "To MD";
 
-  toolbar.append(explainBtn, translateBtn, toMdBtn);
+  toolbar.append(explainBtn, translateBtn, translateEnBtn, toMdBtn);
   document.documentElement.appendChild(toolbar);
 
   explainBtn.addEventListener("click", () => handleAction("explain"));
   translateBtn.addEventListener("click", () => handleAction("translate"));
+  translateEnBtn.addEventListener("click", () => handleAction("to-english"));
   toMdBtn.addEventListener("click", () => handleAction("to-md"));
 }
 
@@ -173,11 +180,14 @@ function hideResultCard() {
 function setLoading(loading, mode) {
   explainBtn.disabled = loading;
   translateBtn.disabled = loading;
+  translateEnBtn.disabled = loading;
   toMdBtn.disabled = loading;
 
   if (loading) {
     if (mode === "translate") {
       translateBtn.textContent = "Loading...";
+    } else if (mode === "to-english") {
+      translateEnBtn.textContent = "Loading...";
     } else if (mode === "to-md") {
       toMdBtn.textContent = "Loading...";
     } else {
@@ -186,6 +196,7 @@ function setLoading(loading, mode) {
   } else {
     explainBtn.textContent = "AI Explain";
     translateBtn.textContent = "To Chinese";
+    translateEnBtn.textContent = "To English";
     toMdBtn.textContent = "To MD";
   }
 }
@@ -193,6 +204,9 @@ function setLoading(loading, mode) {
 function resolveModeTitle(mode) {
   if (mode === "translate") {
     return "Chinese Translation";
+  }
+  if (mode === "to-english") {
+    return "English Translation";
   }
   if (mode === "to-md") {
     return "Markdown Summary";

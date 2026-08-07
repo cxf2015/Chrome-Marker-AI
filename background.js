@@ -117,6 +117,20 @@ function buildMessages(mode, text) {
     ];
   }
 
+  if (mode === "to-english") {
+    return [
+      {
+        role: "system",
+        content:
+          "You are a professional translator. Translate user text into concise, natural English. Return only the translated result."
+      },
+      {
+        role: "user",
+        content: text
+      }
+    ];
+  }
+
   if (mode === "to-md") {
     return [
       {
@@ -349,11 +363,12 @@ function tryParseSseEventBlock(block, onChunk) {
 
 async function executeChatCompletion(apiKey, mode, text, model, provider, diagnostics = null) {
   const config = getProviderConfig(provider);
+  const isTranslateMode = mode === "translate" || mode === "to-english";
   const response = await postChatCompletion(
     apiKey,
     {
       model,
-      temperature: mode === "translate" ? 0.2 : 0.5,
+      temperature: isTranslateMode ? 0.2 : 0.5,
       messages: buildMessages(mode, text)
     },
     provider
@@ -392,6 +407,7 @@ async function executeChatCompletion(apiKey, mode, text, model, provider, diagno
 
 async function executeChatCompletionStream(apiKey, mode, text, model, provider, onChunk, diagnostics = null) {
   const config = getProviderConfig(provider);
+  const isTranslateMode = mode === "translate" || mode === "to-english";
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -404,7 +420,7 @@ async function executeChatCompletionStream(apiKey, mode, text, model, provider, 
       },
       body: JSON.stringify({
         model,
-        temperature: mode === "translate" ? 0.2 : 0.5,
+        temperature: isTranslateMode ? 0.2 : 0.5,
         messages: buildMessages(mode, text),
         stream: true
       }),
