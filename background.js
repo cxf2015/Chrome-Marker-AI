@@ -145,6 +145,20 @@ function buildMessages(mode, text) {
     ];
   }
 
+  if (mode === "summary") {
+    return [
+      {
+        role: "system",
+        content:
+          "你是一名网页内容总结助手。请用简洁、精炼的中文总结当前网页的主要内容，覆盖核心观点与关键信息，去掉广告、导航等无关内容。只输出总结正文，不要多余开场白。"
+      },
+      {
+        role: "user",
+        content: text
+      }
+    ];
+  }
+
   return [
     {
       role: "system",

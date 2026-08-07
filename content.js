@@ -7,6 +7,7 @@ let explainBtn;
 let translateBtn;
 let translateEnBtn;
 let toMdBtn;
+let summaryBtn;
 let resultTitle;
 let resultContent;
 let lastSelectionRect = null;
@@ -36,13 +37,19 @@ function createToolbar() {
   toMdBtn.type = "button";
   toMdBtn.textContent = "To MD";
 
-  toolbar.append(explainBtn, translateBtn, translateEnBtn, toMdBtn);
+  summaryBtn = document.createElement("button");
+  summaryBtn.className = "kimi-toolbar-btn";
+  summaryBtn.type = "button";
+  summaryBtn.textContent = "Summary";
+
+  toolbar.append(explainBtn, translateBtn, translateEnBtn, toMdBtn, summaryBtn);
   document.documentElement.appendChild(toolbar);
 
   explainBtn.addEventListener("click", () => handleAction("explain"));
   translateBtn.addEventListener("click", () => handleAction("translate"));
   translateEnBtn.addEventListener("click", () => handleAction("to-english"));
   toMdBtn.addEventListener("click", () => handleAction("to-md"));
+  summaryBtn.addEventListener("click", () => handleAction("summary"));
 }
 
 function createResultCard() {
@@ -182,6 +189,7 @@ function setLoading(loading, mode) {
   translateBtn.disabled = loading;
   translateEnBtn.disabled = loading;
   toMdBtn.disabled = loading;
+  summaryBtn.disabled = loading;
 
   if (loading) {
     if (mode === "translate") {
@@ -190,6 +198,8 @@ function setLoading(loading, mode) {
       translateEnBtn.textContent = "Loading...";
     } else if (mode === "to-md") {
       toMdBtn.textContent = "Loading...";
+    } else if (mode === "summary") {
+      summaryBtn.textContent = "Loading...";
     } else {
       explainBtn.textContent = "Loading...";
     }
@@ -198,6 +208,7 @@ function setLoading(loading, mode) {
     translateBtn.textContent = "To Chinese";
     translateEnBtn.textContent = "To English";
     toMdBtn.textContent = "To MD";
+    summaryBtn.textContent = "Summary";
   }
 }
 
@@ -210,6 +221,9 @@ function resolveModeTitle(mode) {
   }
   if (mode === "to-md") {
     return "Markdown Summary";
+  }
+  if (mode === "summary") {
+    return "Page Summary";
   }
   return "AI Explanation";
 }
@@ -285,7 +299,7 @@ function requestKimiStream({ mode, text, onChunk }) {
 }
 
 async function handleAction(mode) {
-  const text = mode === "to-md" ? getPageText() : getSelectionText();
+  const text = mode === "to-md" || mode === "summary" ? getPageText() : getSelectionText();
   if (!text) {
     hideToolbar();
     return;
